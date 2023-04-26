@@ -1,5 +1,6 @@
-package main
+package lru
 
+/*LRU缓存淘汰策略*/
 import "container/list"
 
 type Cache struct {

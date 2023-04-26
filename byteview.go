@@ -1,5 +1,6 @@
-package main
+package GeeCache
 
+/*缓存之的抽象与封装*/
 type ByteView struct {
 	data []byte
 	//data 只读

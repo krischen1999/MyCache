@@ -1,4 +1,4 @@
-package main
+package lru
 
 import (
 	"reflect"
@@ -25,8 +25,8 @@ func TestGet(t *testing.T) {
 func TestRemoveoldest(t *testing.T) {
 	k1, k2, k3 := "key1", "key2", "k3"
 	v1, v2, v3 := "value1", "value2", "v3"
-	cap := len(k1 + k2 + v1 + v2)
-	lru := New(int64(cap), nil)
+	curcap := len(k1 + k2 + v1 + v2)
+	lru := New(int64(curcap), nil)
 	lru.Update(k1, String(v1))
 	lru.Update(k2, String(v2))
 	lru.Update(k3, String(v3))
