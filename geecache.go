@@ -1,6 +1,7 @@
 package GeeCache
 
 import (
+	"GeeCache/singleflight"
 	"fmt"
 	"log"
 	"sync"
@@ -13,6 +14,7 @@ type Group struct {
 	getter    Getter
 	maincache cache
 	peers     PeerPicker
+	loader    *singleflight.Group
 }
 
 func (g *Group) RegisterPeers(peers PeerPicker) {
@@ -37,7 +39,7 @@ func NewGroup(name string, cacheBytes int64, getter Getter) *Group {
 	defer mu.Unlock()
 	G := &Group{name, getter, cache{
 		cacheBytes: cacheBytes,
-	}, nil}
+	}, nil, &singleflight.Group{}}
 	groups[name] = G
 	return G
 }
@@ -77,7 +79,24 @@ func (g *Group) load(key string) (value ByteView, err error) {
 		}
 	}
 
-	return g.getLocally(key)
+	viewi, err := g.loader.Do(key, func() (interface{}, error) {
+		if g.peers != nil {
+			if peer, ok := g.peers.PickPeer(key); ok {
+				if value, err = g.getFromPeer(peer, key); err == nil {
+					return value, nil
+				}
+				log.Println("[GeeCache] Failed to get from peer", err)
+			}
+		}
+
+		return g.getLocally(key)
+	})
+
+	if err == nil {
+		return viewi.(ByteView), nil
+	}
+	return
+
 }
 
 // 从本地获取源数据
