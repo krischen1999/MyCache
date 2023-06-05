@@ -1,4 +1,4 @@
-package GeeCache
+package MyCache
 
 import (
 	pb "GeeCache/geecachepb"
@@ -60,7 +60,7 @@ func (g *Group) Get(key string) (ByteView, error) {
 		return ByteView{}, fmt.Errorf("key is required")
 	}
 
-	if v, ok := g.maincache.get(key); ok {
+	if v, ok := g.maincache.Get(key); ok {
 		log.Printf("[GeeCache] hit")
 		return v, nil
 	} else {
@@ -114,7 +114,7 @@ func (g *Group) getLocally(key string) (ByteView, error) {
 }
 
 func (g *Group) populateCache(key string, value ByteView) {
-	g.maincache.update(key, value)
+	g.maincache.Add(key, value)
 }
 
 func (g *Group) getFromPeer(peer PeerGetter, key string) (ByteView, error) {

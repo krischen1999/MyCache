@@ -1,4 +1,4 @@
-package GeeCache
+package MyCache
 
 /*缓存之的抽象与封装*/
 type ByteView struct {
