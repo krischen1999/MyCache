@@ -27,16 +27,17 @@ func (f *fifoCahce) Get(key string) (value Value, ok bool) {
 func (f *fifoCahce) Add(key string, value Value) {
 	if ele, ok := f.cache[key]; ok {
 		//更新缓存
+		f.nbytes += int64(value.Len()) - int64(ele.Value.(*entry).value.Len())
 		ele.Value.(*entry).value = value
 	} else {
 		kv := &entry{key, value, nil}
-		kv.touch(f.ttl)
+		kv.touch()
 		ele := f.ll.PushBack(kv)
 		f.cache[key] = ele
 		f.nbytes += int64(len(kv.key)) + int64(kv.value.Len())
-		for f.maxBytes != 0 && f.maxBytes < f.nbytes {
-			f.RemoveFront()
-		}
+	}
+	for f.maxBytes != 0 && f.maxBytes < f.nbytes {
+		f.RemoveFront()
 	}
 }
 
@@ -54,7 +55,7 @@ func (f *fifoCahce) RemoveFront() {
 
 func (f *fifoCahce) CleanUp() {
 	for e := f.ll.Front(); e != nil; e = e.Next() {
-		if e.Value.(*entry).expired() {
+		if e.Value.(*entry).expired(f.ttl) {
 			kv := f.ll.Remove(e).(*entry)
 			delete(f.cache, kv.key)
 			f.nbytes -= int64(len(kv.key)) + int64(kv.value.Len())

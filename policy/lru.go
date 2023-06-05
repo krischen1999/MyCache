@@ -36,10 +36,10 @@ func (c *lru) RemoveOldest() {
 
 func (c *lru) Get(key string) (value Value, ok bool) {
 	ele, ok := c.cache[key]
-	if ok && ele.Value.(*entry).expired() {
+	if ok && ele.Value.(*entry).expired(c.ttl) {
 		c.ll.MoveToBack(ele)
 		kv := ele.Value.(*entry)
-		kv.touch(c.ttl)
+		kv.touch()
 		//更新数据过期时间
 		return kv.value, ok
 	}
@@ -51,12 +51,12 @@ func (c *lru) Add(key string, value Value) {
 		c.ll.MoveToBack(ele)
 		//更新value
 		kv := ele.Value.(*entry)
-		kv.touch(c.ttl)
+		kv.touch()
 		c.nbytes += int64(value.Len()) - int64(kv.value.Len())
 		kv.value = value
 	} else {
 		kv := &entry{key, value, nil}
-		kv.touch(c.ttl)
+		kv.touch()
 		ele := c.ll.PushBack(kv)
 		c.cache[key] = ele
 		c.nbytes += int64(len(kv.key)) + int64(kv.value.Len())
@@ -73,7 +73,7 @@ func (c *lru) Len() int {
 
 func (c *lru) CleanUp() {
 	for e := c.ll.Front(); e != nil; e = e.Next() {
-		if e.Value.(*entry).expired() {
+		if e.Value.(*entry).expired(c.ttl) {
 			kv := c.ll.Remove(e).(*entry)
 			delete(c.cache, kv.key)
 			c.nbytes -= int64(len(kv.key)) + int64(kv.value.Len())

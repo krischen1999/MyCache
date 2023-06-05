@@ -6,25 +6,26 @@ import (
 )
 
 type entry struct {
-	key     string
-	value   Value
-	expires *time.Time
+	key      string
+	value    Value
+	updateAt *time.Time
 }
 
 // ttl
-func (ele *entry) expired() (ok bool) {
-	if ele.expires == nil {
+func (ele *entry) expired(duration time.Duration) (ok bool) {
+	if ele.updateAt == nil {
 		ok = true
 	} else {
-		ok = ele.expires.Before(time.Now())
+		ok = ele.updateAt.Add(duration).Before(time.Now())
 	}
 	return
 }
 
 // ttl
-func (ele *entry) touch(duration time.Duration) {
-	expiration := time.Now().Add(duration)
-	ele.expires = &expiration
+func (ele *entry) touch() {
+	//ele.updateAt=time.Now()
+	nowTime := time.Now()
+	ele.updateAt = &nowTime
 }
 
 func New(name string, maxBytes int64, onEvicted func(string, Value), ttl time.Duration) Interface {
