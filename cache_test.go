@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-func Test_cache_statrClenupTimer(t *testing.T) {
+func Test_cache_startClenUpTimer(t *testing.T) {
 	c := &cache{
 		cacheBytes: 100,
 		polName:    "lru",

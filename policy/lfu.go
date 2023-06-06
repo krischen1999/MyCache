@@ -13,7 +13,7 @@ type lfuCache struct {
 	OnEvicted func(key string, value Value)
 }
 
-func (p lfuCache) Get(key string) (value Value, updateAt *time.Time, ok bool) {
+func (p *lfuCache) Get(key string) (value Value, updateAt *time.Time, ok bool) {
 	if e, ok := p.cache[key]; ok {
 		e.referenced()
 		heap.Fix(p.pq, e.index)
@@ -65,6 +65,6 @@ func (p *lfuCache) Remove() {
 	}
 }
 
-func (p lfuCache) Len() int {
+func (p *lfuCache) Len() int {
 	return p.pq.Len()
 }
