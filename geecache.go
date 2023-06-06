@@ -23,7 +23,6 @@ func (g *Group) RegisterPeers(peers PeerPicker) {
 		panic("RegisterPeerPicker called more than once")
 	}
 	g.peers = peers
-
 }
 
 var (

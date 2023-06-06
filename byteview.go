@@ -1,6 +1,6 @@
 package MyCache
 
-/*缓存之的抽象与封装*/
+/*缓存值的抽象与封装*/
 type ByteView struct {
 	data []byte
 	//data 只读

@@ -7,60 +7,66 @@ import (
 	"time"
 )
 
-// 该文件为lru添加并发特性
+// 该文件为cache 添加并发特性
+// 并为cache添加ttl功能
 type cache struct {
 	ttl        time.Duration
 	mu         sync.RWMutex //互斥锁
-	plo        Interface
+	polName    string
+	pol        Interface
 	cacheBytes int64
 }
 
 type Interface interface {
-	Get(string) (policy.Value, bool)
+	Get(string) (policy.Value, *time.Time, bool)
 	Add(string, policy.Value)
-	CleanUp()
+	CleanUp(ttl time.Duration)
+	Len() int
 }
 
 func (c *cache) Add(key string, value ByteView) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	//延迟初始化
-	if c.plo == nil {
-		c.plo = policy.NewLruCache(c.cacheBytes, nil, c.ttl)
-
+	if c.pol == nil {
+		c.pol = policy.New(c.polName, c.cacheBytes, nil)
 	}
-
-	c.plo.Add(key, value)
+	c.pol.Add(key, value)
 
 }
 
 func (c *cache) Get(key string) (value ByteView, ok bool) {
-	c.mu.Lock()
-	defer c.mu.Unlock()
-	if c.plo == nil {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	if c.pol == nil {
 		return
 	}
-	if v, ok := c.plo.Get(key); ok {
+	if v, t, ok := c.pol.Get(key); ok && t.Add(c.ttl).After(time.Now()) {
 		return v.(ByteView), ok
 	}
 	return
 }
 
-func (c *cache) statrClenupTimer() {
+func (c *cache) startClenUpTimer() {
 	duration := c.ttl
-	//ClenUp触发时间不少于一分钟
+	//TTL不小于一秒钟
 	if duration < time.Second {
 		duration = time.Second
 	}
 	ticker := time.Tick(duration)
+	//ClenUp触发间隔跟ttl一致
 	go func() {
 		for {
-			select {
-			case <-ticker:
-				c.mu.Lock()
-				c.plo.CleanUp()
-				c.mu.Unlock()
-			}
+			//select {
+			//case <-ticker:
+			//	c.mu.Lock()
+			//	c.pol.CleanUp(duration)
+			//	c.mu.Unlock()
+			//}
+			<-ticker
+			c.mu.Lock()
+			c.pol.CleanUp(duration)
+			c.mu.Unlock()
 		}
 	}()
 

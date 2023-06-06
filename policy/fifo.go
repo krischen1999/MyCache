@@ -6,7 +6,6 @@ import (
 )
 
 type fifoCahce struct {
-	ttl      time.Duration
 	maxBytes int64
 	nbytes   int64
 	ll       *list.List
@@ -16,9 +15,10 @@ type fifoCahce struct {
 	OnEvicted func(key string, value Value)
 }
 
-func (f *fifoCahce) Get(key string) (value Value, ok bool) {
+func (f *fifoCahce) Get(key string) (value Value, updateAt *time.Time, ok bool) {
 	if ele, ok := f.cache[key]; ok {
-		return ele.Value.(*entry).value, true
+		e := ele.Value.(*entry)
+		return e.value, e.updateAt, true
 	}
 	return
 
@@ -53,9 +53,9 @@ func (f *fifoCahce) RemoveFront() {
 	}
 }
 
-func (f *fifoCahce) CleanUp() {
+func (f *fifoCahce) CleanUp(ttl time.Duration) {
 	for e := f.ll.Front(); e != nil; e = e.Next() {
-		if e.Value.(*entry).expired(f.ttl) {
+		if e.Value.(*entry).expired(ttl) {
 			kv := f.ll.Remove(e).(*entry)
 			delete(f.cache, kv.key)
 			f.nbytes -= int64(len(kv.key)) + int64(kv.value.Len())

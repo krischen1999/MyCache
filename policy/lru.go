@@ -8,7 +8,6 @@ import (
 )
 
 type lru struct {
-	ttl      time.Duration
 	maxBytes int64
 	nbytes   int64
 	ll       *list.List
@@ -34,14 +33,13 @@ func (c *lru) RemoveOldest() {
 	}
 }
 
-func (c *lru) Get(key string) (value Value, ok bool) {
-	ele, ok := c.cache[key]
-	if ok && ele.Value.(*entry).expired(c.ttl) {
+func (c *lru) Get(key string) (value Value, updateAt *time.Time, ok bool) {
+	if ele, ok := c.cache[key]; ok {
 		c.ll.MoveToBack(ele)
-		kv := ele.Value.(*entry)
-		kv.touch()
+		e := ele.Value.(*entry)
+		e.touch()
 		//更新数据过期时间
-		return kv.value, ok
+		return e.value, e.updateAt, ok
 	}
 	return
 }
@@ -71,9 +69,9 @@ func (c *lru) Len() int {
 	return c.ll.Len()
 }
 
-func (c *lru) CleanUp() {
+func (c *lru) CleanUp(ttl time.Duration) {
 	for e := c.ll.Front(); e != nil; e = e.Next() {
-		if e.Value.(*entry).expired(c.ttl) {
+		if e.Value.(*entry).expired(ttl) {
 			kv := c.ll.Remove(e).(*entry)
 			delete(c.cache, kv.key)
 			c.nbytes -= int64(len(kv.key)) + int64(kv.value.Len())

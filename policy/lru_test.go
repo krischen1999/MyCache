@@ -12,12 +12,12 @@ func (d String) Len() int {
 }
 
 func TestGet(t *testing.T) {
-	lru := New("lru", int64(15), nil, 100).(*lru)
+	lru := New("lru", int64(15), nil).(*lru)
 	lru.Add("key1", String("1234"))
-	if v, ok := lru.Get("key1"); !ok || string(v.(String)) != "1234" {
+	if v, _, ok := lru.Get("key1"); !ok || string(v.(String)) != "1234" {
 		t.Fatalf("cache hit key1=1234 failed")
 	}
-	if _, ok := lru.Get("key2"); ok {
+	if _, _, ok := lru.Get("key2"); ok {
 		t.Fatalf("cache miss key2 failed")
 	}
 }
@@ -26,11 +26,11 @@ func TestRemoveoldest(t *testing.T) {
 	k1, k2, k3 := "key1", "key2", "k3"
 	v1, v2, v3 := "value1", "value2", "v3"
 	curcap := len(k1 + k2 + v1 + v2)
-	lru := New("lru", int64(curcap), nil, 100).(*lru)
+	lru := New("lru", int64(curcap), nil).(*lru)
 	lru.Add(k1, String(v1))
 	lru.Add(k2, String(v2))
 	lru.Add(k3, String(v3))
-	if _, ok := lru.Get("key1"); ok || lru.Len() != 2 {
+	if _, _, ok := lru.Get("key1"); ok || lru.Len() != 2 {
 		t.Fatalf("Removeoldest key1 failed")
 	}
 }
@@ -40,7 +40,7 @@ func TestOnEvicted(t *testing.T) {
 	callback := func(key string, value Value) {
 		keys = append(keys, key)
 	}
-	lru := New("lru", int64(10), callback, 100).(*lru)
+	lru := New("lru", int64(10), callback).(*lru)
 	lru.Add("key1", String("123456"))
 	lru.Add("k2", String("k2"))
 	lru.Add("k3", String("k3"))
@@ -51,4 +51,5 @@ func TestOnEvicted(t *testing.T) {
 	if !reflect.DeepEqual(expect, keys) {
 		t.Fatalf("Call OnEvicted failed, expect keys equals to %s", expect)
 	}
+
 }

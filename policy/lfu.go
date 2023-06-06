@@ -6,7 +6,6 @@ import (
 )
 
 type lfuCache struct {
-	ttl       time.Duration
 	nbytes    int64
 	maxBytes  int64
 	cache     map[string]*lfuEntry
@@ -14,11 +13,11 @@ type lfuCache struct {
 	OnEvicted func(key string, value Value)
 }
 
-func (p lfuCache) Get(key string) (value Value, ok bool) {
+func (p lfuCache) Get(key string) (value Value, updateAt *time.Time, ok bool) {
 	if e, ok := p.cache[key]; ok {
 		e.referenced()
 		heap.Fix(p.pq, e.index)
-		return e.entry.value, ok
+		return e.entry.value, e.entry.updateAt, ok
 	}
 	return
 }
@@ -43,9 +42,9 @@ func (p *lfuCache) Add(key string, value Value) {
 	}
 }
 
-func (p *lfuCache) CleanUp() {
+func (p *lfuCache) CleanUp(ttl time.Duration) {
 	for _, e := range *p.pq {
-		if e.entry.expired(p.ttl) {
+		if e.entry.expired(ttl) {
 
 			kv := heap.Remove(p.pq, e.index).(*lfuEntry).entry
 			delete(p.cache, kv.key)

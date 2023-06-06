@@ -14,7 +14,7 @@ type entry struct {
 // ttl
 func (ele *entry) expired(duration time.Duration) (ok bool) {
 	if ele.updateAt == nil {
-		ok = true
+		ok = false
 	} else {
 		ok = ele.updateAt.Add(duration).Before(time.Now())
 	}
@@ -28,25 +28,24 @@ func (ele *entry) touch() {
 	ele.updateAt = &nowTime
 }
 
-func New(name string, maxBytes int64, onEvicted func(string, Value), ttl time.Duration) Interface {
+func New(name string, maxBytes int64, onEvicted func(string, Value)) Interface {
 
 	if name == "fifo" {
-		return NewFifoCache(maxBytes, onEvicted, ttl)
+		return NewFifoCache(maxBytes, onEvicted)
 	}
 	if name == "lru" {
-		return NewLruCache(maxBytes, onEvicted, ttl)
+		return NewLruCache(maxBytes, onEvicted)
 	}
 	if name == "lfu" {
-		return NewLfuCache(maxBytes, onEvicted, ttl)
+		return NewLfuCache(maxBytes, onEvicted)
 	}
 
 	return nil
 }
 
-func NewLruCache(maxBytes int64, onEvicted func(string, Value), ttl time.Duration) *lru {
+func NewLruCache(maxBytes int64, onEvicted func(string, Value)) *lru {
 
 	return &lru{
-		ttl:       ttl,
 		maxBytes:  maxBytes,
 		ll:        list.New(),
 		cache:     make(map[string]*list.Element),
@@ -54,10 +53,9 @@ func NewLruCache(maxBytes int64, onEvicted func(string, Value), ttl time.Duratio
 	}
 }
 
-func NewFifoCache(maxBytes int64, onEvicted func(string, Value), ttl time.Duration) *fifoCahce {
+func NewFifoCache(maxBytes int64, onEvicted func(string, Value)) *fifoCahce {
 
 	return &fifoCahce{
-		ttl:       ttl,
 		maxBytes:  maxBytes,
 		ll:        list.New(),
 		cache:     make(map[string]*list.Element),
@@ -65,10 +63,9 @@ func NewFifoCache(maxBytes int64, onEvicted func(string, Value), ttl time.Durati
 	}
 }
 
-func NewLfuCache(maxBytes int64, onEvicted func(string, Value), ttl time.Duration) *lfuCache {
+func NewLfuCache(maxBytes int64, onEvicted func(string, Value)) *lfuCache {
 	queue := priorityqueue(make([]*lfuEntry, 0))
 	return &lfuCache{
-		ttl:       ttl,
 		maxBytes:  maxBytes,
 		pq:        &queue,
 		cache:     make(map[string]*lfuEntry),
@@ -77,7 +74,8 @@ func NewLfuCache(maxBytes int64, onEvicted func(string, Value), ttl time.Duratio
 }
 
 type Interface interface {
-	Get(string) (Value, bool)
+	Get(string) (Value, *time.Time, bool)
 	Add(string, Value)
-	CleanUp()
+	CleanUp(ttl time.Duration)
+	Len() int
 }
