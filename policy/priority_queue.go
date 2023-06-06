@@ -34,15 +34,15 @@ func (pq priorityqueue) Swap(i, j int) {
 }
 
 func (pq *priorityqueue) Pop() interface{} {
-	old := *pq
-	n := len(old)
-	entry := old[n-1]
-	old[n-1] = nil //避免内存泄露
-	new := old[0 : n-1]
-	for i := 0; i < len(new); i++ {
-		new[i].index = i
+	oldpq := *pq
+	n := len(oldpq)
+	entry := oldpq[n-1]
+	oldpq[n-1] = nil //避免内存泄露
+	newpq := oldpq[0 : n-1]
+	for i := 0; i < len(newpq); i++ {
+		newpq[i].index = i
 	}
-	*pq = new
+	*pq = newpq
 	return entry
 }
 
