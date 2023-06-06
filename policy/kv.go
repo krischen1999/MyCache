@@ -31,10 +31,13 @@ func (ele *entry) touch() {
 func New(name string, maxBytes int64, onEvicted func(string, Value), ttl time.Duration) Interface {
 
 	if name == "fifo" {
-		return NewfifoCache(maxBytes, onEvicted, ttl)
+		return NewFifoCache(maxBytes, onEvicted, ttl)
 	}
 	if name == "lru" {
 		return NewLruCache(maxBytes, onEvicted, ttl)
+	}
+	if name == "lfu" {
+		return NewLfuCache(maxBytes, onEvicted, ttl)
 	}
 
 	return nil
@@ -51,13 +54,24 @@ func NewLruCache(maxBytes int64, onEvicted func(string, Value), ttl time.Duratio
 	}
 }
 
-func NewfifoCache(maxBytes int64, onEvicted func(string, Value), ttl time.Duration) *fifoCahce {
+func NewFifoCache(maxBytes int64, onEvicted func(string, Value), ttl time.Duration) *fifoCahce {
 
 	return &fifoCahce{
 		ttl:       ttl,
 		maxBytes:  maxBytes,
 		ll:        list.New(),
 		cache:     make(map[string]*list.Element),
+		OnEvicted: onEvicted,
+	}
+}
+
+func NewLfuCache(maxBytes int64, onEvicted func(string, Value), ttl time.Duration) *lfuCache {
+	queue := priorityqueue(make([]*lfuEntry, 0))
+	return &lfuCache{
+		ttl:       ttl,
+		maxBytes:  maxBytes,
+		pq:        &queue,
+		cache:     make(map[string]*lfuEntry),
 		OnEvicted: onEvicted,
 	}
 }

@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-type PriorityQueue struct {
+type lfuCache struct {
 	ttl       time.Duration
 	nbytes    int64
 	maxBytes  int64
@@ -14,7 +14,7 @@ type PriorityQueue struct {
 	OnEvicted func(key string, value Value)
 }
 
-func (p PriorityQueue) Get(key string) (value Value, ok bool) {
+func (p lfuCache) Get(key string) (value Value, ok bool) {
 	if e, ok := p.cache[key]; ok {
 		e.referenced()
 		heap.Fix(p.pq, e.index)
@@ -23,7 +23,7 @@ func (p PriorityQueue) Get(key string) (value Value, ok bool) {
 	return
 }
 
-func (p PriorityQueue) Add(key string, value Value) {
+func (p *lfuCache) Add(key string, value Value) {
 	if e, ok := p.cache[key]; ok {
 		//更新value
 		p.nbytes += int64(value.Len()) - int64(e.entry.value.Len())
@@ -33,16 +33,17 @@ func (p PriorityQueue) Add(key string, value Value) {
 	} else {
 
 		e := &lfuEntry{0, entry{key, value, nil}, 0}
+		e.referenced()
 		heap.Push(p.pq, e)
 		p.cache[key] = e
-		p.nbytes += int64(len(key)) + int64(value.Len())
+		p.nbytes += int64(len(e.entry.key)) + int64(e.entry.value.Len())
 	}
 	for p.maxBytes != 0 && p.maxBytes < p.nbytes {
 		p.Remove()
 	}
 }
 
-func (p PriorityQueue) CleanUp() {
+func (p *lfuCache) CleanUp() {
 	for _, e := range *p.pq {
 		if e.entry.expired(p.ttl) {
 
@@ -56,11 +57,15 @@ func (p PriorityQueue) CleanUp() {
 	}
 }
 
-func (p PriorityQueue) Remove() {
-	e := p.pq.Pop().(*lfuEntry)
+func (p *lfuCache) Remove() {
+	e := heap.Pop(p.pq).(*lfuEntry)
 	delete(p.cache, e.entry.key)
 	p.nbytes -= int64(len(e.entry.key)) + int64(e.entry.value.Len())
 	if p.OnEvicted != nil {
 		p.OnEvicted(e.entry.key, e.entry.value)
 	}
+}
+
+func (p lfuCache) Len() int {
+	return p.pq.Len()
 }
