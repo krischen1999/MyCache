@@ -31,19 +31,19 @@ func (ele *entry) touch() {
 func New(name string, maxBytes int64, onEvicted func(string, Value)) Interface {
 
 	if name == "fifo" {
-		return NewFifoCache(maxBytes, onEvicted)
+		return newFifoCache(maxBytes, onEvicted)
 	}
 	if name == "lru" {
-		return NewLruCache(maxBytes, onEvicted)
+		return newLruCache(maxBytes, onEvicted)
 	}
 	if name == "lfu" {
-		return NewLfuCache(maxBytes, onEvicted)
+		return newLfuCache(maxBytes, onEvicted)
 	}
 
 	return nil
 }
 
-func NewLruCache(maxBytes int64, onEvicted func(string, Value)) *lru {
+func newLruCache(maxBytes int64, onEvicted func(string, Value)) *lru {
 
 	return &lru{
 		maxBytes:  maxBytes,
@@ -53,7 +53,7 @@ func NewLruCache(maxBytes int64, onEvicted func(string, Value)) *lru {
 	}
 }
 
-func NewFifoCache(maxBytes int64, onEvicted func(string, Value)) *fifoCahce {
+func newFifoCache(maxBytes int64, onEvicted func(string, Value)) *fifoCahce {
 
 	return &fifoCahce{
 		maxBytes:  maxBytes,
@@ -63,7 +63,7 @@ func NewFifoCache(maxBytes int64, onEvicted func(string, Value)) *fifoCahce {
 	}
 }
 
-func NewLfuCache(maxBytes int64, onEvicted func(string, Value)) *lfuCache {
+func newLfuCache(maxBytes int64, onEvicted func(string, Value)) *lfuCache {
 	queue := priorityqueue(make([]*lfuEntry, 0))
 	return &lfuCache{
 		maxBytes:  maxBytes,
