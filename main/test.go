@@ -1,11 +1,12 @@
 package main
 
 import (
-	"GeeCache"
+	"MyCache"
 	"flag"
 	"fmt"
 	"log"
 	"net/http"
+	"time"
 )
 
 var db = map[string]string{
@@ -14,8 +15,8 @@ var db = map[string]string{
 	"Sam":  "567",
 }
 
-func createGroup() *GeeCache.Group {
-	return GeeCache.NewGroup("scores", 2<<10, GeeCache.GetterFunc(
+func createGroup() *MyCache.Group {
+	return MyCache.NewGroup("scores", 2<<10, time.Minute, "lru", MyCache.GetterFunc(
 		func(key string) ([]byte, error) {
 			log.Println("[SlowDB] search key", key)
 			if v, ok := db[key]; ok {
@@ -25,15 +26,15 @@ func createGroup() *GeeCache.Group {
 		}))
 }
 
-func startCacheServer(addr string, addrs []string, gee *GeeCache.Group) {
-	peers := GeeCache.NewHTTPPool(addr)
+func startCacheServer(addr string, addrs []string, gee *MyCache.Group) {
+	peers := MyCache.NewHTTPPool(addr)
 	peers.Set(addrs...)
 	gee.RegisterPeers(peers)
 	log.Println("geecache is running at", addr)
 	log.Fatal(http.ListenAndServe(addr[7:], peers))
 }
 
-func startAPIServer(apiAddr string, gee *GeeCache.Group) {
+func startAPIServer(apiAddr string, gee *MyCache.Group) {
 	http.Handle("/api", http.HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
 			key := r.URL.Query().Get("key")

@@ -5,6 +5,7 @@ import (
 	"log"
 	"reflect"
 	"testing"
+	"time"
 )
 
 var db = map[string]string{
@@ -27,9 +28,9 @@ func TestGetter(t *testing.T) {
 
 func TestGet(t *testing.T) {
 	loadCounts := make(map[string]int, len(db))
-	gee := NewGroup("scores", 2<<10, GetterFunc(
+	gee := NewGroup("scores", 2<<10, time.Minute, "lru", GetterFunc(
 		func(key string) ([]byte, error) {
-			log.Println("[SlowDB] search key", key)
+			log.Println("[Database] search key", key)
 			if v, ok := db[key]; ok {
 				if _, ok := loadCounts[key]; !ok {
 					loadCounts[key] = 0

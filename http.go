@@ -1,11 +1,11 @@
 package MyCache
 
 import (
-	"GeeCache/consistenthash"
-	pb "GeeCache/geecachepb"
+	"MyCache/consistenthash"
+	pb "MyCache/geecachepb"
 	"fmt"
 	"github.com/golang/protobuf/proto"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 	"net/url"
@@ -126,13 +126,19 @@ func (h *httpGetter) Get(in *pb.Request, out *pb.Response) error {
 	if err != nil {
 		return err
 	}
-	defer res.Body.Close()
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+
+		}
+	}(res.Body)
 
 	if res.StatusCode != http.StatusOK {
 		return fmt.Errorf("server returned: %v", res.Status)
 	}
 
-	bytes, err := ioutil.ReadAll(res.Body)
+	bytes, err := io.ReadAll(res.Body)
+	//bytes, err := io.Copy(os.Stdout, res.Body)
 	if err != nil {
 		return fmt.Errorf("reading response body: %v", err)
 	}

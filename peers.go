@@ -1,6 +1,6 @@
 package MyCache
 
-import pb "GeeCache/geecachepb"
+import pb "MyCache/geecachepb"
 
 // 本地需实现peerpicker
 type PeerPicker interface {

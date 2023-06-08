@@ -1,4 +1,4 @@
-module GeeCache
+module MyCache
 
 go 1.20
 

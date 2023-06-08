@@ -2,7 +2,7 @@ package MyCache
 
 /*并发控制*/
 import (
-	"GeeCache/policy"
+	"MyCache/policy"
 	"sync"
 	"time"
 )

@@ -1,11 +1,12 @@
 package MyCache
 
 import (
-	pb "GeeCache/geecachepb"
-	"GeeCache/singleflight"
+	pb "MyCache/geecachepb"
+	"MyCache/singleflight"
 	"fmt"
 	"log"
 	"sync"
+	"time"
 )
 
 /*geecache 主体*/
@@ -31,14 +32,14 @@ var (
 )
 
 // 生成group实例
-func NewGroup(name string, cacheBytes int64, getter Getter) *Group {
+func NewGroup(name string, cacheBytes int64, ttl time.Duration, polName string, getter Getter) *Group {
 	if getter == nil {
 		panic("nil Getter")
 	}
 	mu.Lock()
 	defer mu.Unlock()
 	G := &Group{name, getter, cache{
-		cacheBytes: cacheBytes,
+		cacheBytes: cacheBytes, polName: polName, ttl: ttl,
 	}, nil, &singleflight.Group{}}
 	groups[name] = G
 	return G
@@ -60,10 +61,10 @@ func (g *Group) Get(key string) (ByteView, error) {
 	}
 
 	if v, ok := g.maincache.Get(key); ok {
-		log.Printf("[GeeCache] hit")
+		log.Printf("[Cache] hit")
 		return v, nil
 	} else {
-		log.Printf("[GeeCache] hit failed")
+		log.Printf("[Cache] hit failed")
 		return g.getLocally(key)
 	}
 
@@ -75,7 +76,7 @@ func (g *Group) load(key string) (value ByteView, err error) {
 			if value, err = g.getFromPeer(peer, key); err == nil {
 				return value, nil
 			}
-			log.Println("[GeeCache Failed to get from peer", err)
+			log.Println("[Cache Failed to get from peer", err)
 		}
 	}
 
@@ -85,7 +86,7 @@ func (g *Group) load(key string) (value ByteView, err error) {
 				if value, err = g.getFromPeer(peer, key); err == nil {
 					return value, nil
 				}
-				log.Println("[GeeCache] Failed to get from peer", err)
+				log.Println("[Cache] Failed to get from peer", err)
 			}
 		}
 
